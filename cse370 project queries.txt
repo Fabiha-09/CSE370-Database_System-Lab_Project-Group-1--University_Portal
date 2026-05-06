@@ -1,0 +1,639 @@
+CREATE DATABASE IF NOT EXISTS university_portal;
+USE university_portal;
+
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS Smart_Recommendation;
+DROP TABLE IF EXISTS AnalyticsDashboard;
+DROP TABLE IF EXISTS Section_Timing;
+DROP TABLE IF EXISTS Section;
+DROP TABLE IF EXISTS Files;
+DROP TABLE IF EXISTS AcademicRoutine;
+DROP TABLE IF EXISTS Reward_Points;
+DROP TABLE IF EXISTS Semester_Fees;
+DROP TABLE IF EXISTS Note;
+DROP TABLE IF EXISTS Student_Phone;
+DROP TABLE IF EXISTS Complaint;
+DROP TABLE IF EXISTS Clubs;
+DROP TABLE IF EXISTS Enrolled_In;
+DROP TABLE IF EXISTS Grade;
+DROP TABLE IF EXISTS Prerequisite;
+DROP TABLE IF EXISTS Classroom_Lab_Room;
+DROP TABLE IF EXISTS Classroom_Theory_Room;
+DROP TABLE IF EXISTS Course;
+DROP TABLE IF EXISTS Exam;
+DROP TABLE IF EXISTS Classroom;
+DROP TABLE IF EXISTS Student;
+DROP TABLE IF EXISTS Faculty;
+DROP TABLE IF EXISTS Department;
+SET FOREIGN_KEY_CHECKS = 1;
+
+1. Core Entities
+
+
+CREATE TABLE Department (
+    dept_id             VARCHAR(10)  PRIMARY KEY,
+    dept_name           VARCHAR(100) NOT NULL,
+    total_no_students   INT DEFAULT 0
+);
+
+CREATE TABLE Faculty (
+    faculty_id      VARCHAR(10)  PRIMARY KEY,
+    faculty_type    VARCHAR(30),
+    specialization  VARCHAR(100),
+    name            VARCHAR(100) NOT NULL,
+    email           VARCHAR(100) NOT NULL UNIQUE,
+    dept_id         VARCHAR(10),
+    FOREIGN KEY (dept_id) REFERENCES Department(dept_id)
+);
+
+CREATE TABLE Student (
+    Student_id      VARCHAR(10)  PRIMARY KEY,
+    DOB             DATE,
+    Email           VARCHAR(100) NOT NULL UNIQUE,
+    Fname           VARCHAR(50)  NOT NULL,
+    Lname           VARCHAR(50)  NOT NULL,
+    cgpa            DECIMAL(4,2) DEFAULT 0.00,
+    Student_type    VARCHAR(20)  DEFAULT 'Undergrad',
+    Gender          VARCHAR(10),
+    dept_id         VARCHAR(10),
+    FOREIGN KEY (dept_id) REFERENCES Department(dept_id)
+);
+
+CREATE TABLE Student_Phone (
+    Phone           VARCHAR(20),
+    Student_id      VARCHAR(10),
+    PRIMARY KEY (Phone, Student_id),
+    FOREIGN KEY (Student_id) REFERENCES Student(Student_id)
+);
+
+2. Facilities (Optimized Classrooms)
+
+
+CREATE TABLE Classroom (
+    room_no         VARCHAR(20)  PRIMARY KEY,
+    capacity        INT NOT NULL,
+    projector       BOOLEAN DEFAULT FALSE,
+    date            DATE,
+    time            TIME,
+    pcs             INT DEFAULT 0,
+    Equipment_List  VARCHAR(255)       
+);
+
+CREATE TABLE Classroom_Lab_Room (
+    lab_room        VARCHAR(50),
+    room_no         VARCHAR(20),
+    Occupied_Slots  INT DEFAULT 0,
+    Free_Slots      INT DEFAULT 0,
+    PRIMARY KEY (lab_room),
+    FOREIGN KEY (room_no) REFERENCES Classroom(room_no)
+);
+
+CREATE TABLE Classroom_Theory_Room (
+    theory_room     VARCHAR(50),
+    room_no         VARCHAR(20),
+    Occupied_Slots  INT DEFAULT 0,
+    Free_Slots      INT DEFAULT 0,
+    PRIMARY KEY (theory_room),
+    FOREIGN KEY (room_no) REFERENCES Classroom(room_no)
+);
+
+3. Academics
+
+
+
+CREATE TABLE Course (
+    course_code         VARCHAR(10)  PRIMARY KEY,
+    Semester_id         VARCHAR(10)  NOT NULL,
+    credit_hours        INT NOT NULL DEFAULT 3,
+    Enrollment_date     DATE,
+    max_capacity        INT DEFAULT 40,
+    Start_date          DATE,
+    End_date            DATE,
+    Max_credits         INT DEFAULT 15,
+    dept_id             VARCHAR(10),
+    room_no             VARCHAR(20),
+    FOREIGN KEY (dept_id) REFERENCES Department(dept_id),
+    FOREIGN KEY (room_no) REFERENCES Classroom(room_no)
+);
+
+CREATE TABLE Prerequisite (
+    course_code         VARCHAR(10),
+    prereq_course_code  VARCHAR(10),
+    PRIMARY KEY (course_code, prereq_course_code),
+    FOREIGN KEY (course_code)        REFERENCES Course(course_code),
+    FOREIGN KEY (prereq_course_code) REFERENCES Course(course_code)
+);
+
+CREATE TABLE Enrolled_In (
+    Student_id      VARCHAR(10),
+    course_code     VARCHAR(10),
+    PRIMARY KEY (Student_id, course_code),
+    FOREIGN KEY (Student_id)  REFERENCES Student(Student_id),
+    FOREIGN KEY (course_code) REFERENCES Course(course_code)
+);
+
+CREATE TABLE Grade (
+    Student_id      VARCHAR(10),
+    Course_code     VARCHAR(10),
+    Grade_Point     VARCHAR(5),        
+    Marks_obtained  DECIMAL(5,2),
+    PRIMARY KEY (Student_id, Course_code),
+    FOREIGN KEY (Student_id)  REFERENCES Student(Student_id),
+    FOREIGN KEY (Course_code) REFERENCES Course(course_code)
+);
+
+CREATE TABLE Exam (
+    Exam_id         INT AUTO_INCREMENT PRIMARY KEY,
+    Exam_type       VARCHAR(20) NOT NULL,
+    Room_number     VARCHAR(20),
+    Start_time      TIME,
+    Exam_date       DATE,
+    Student_id      VARCHAR(10),
+    FOREIGN KEY (Student_id)  REFERENCES Student(Student_id),
+    FOREIGN KEY (Room_number) REFERENCES Classroom(room_no)
+);
+
+CREATE TABLE Section (
+    section_no      VARCHAR(10)  PRIMARY KEY,
+    room_no         VARCHAR(20),
+    date            DATE,
+    time            TIME,
+    FOREIGN KEY (room_no) REFERENCES Classroom(room_no)
+);
+
+CREATE TABLE Section_Timing (
+    Timing          VARCHAR(50),
+    section_no      VARCHAR(10),
+    Semester_id     VARCHAR(10),
+    PRIMARY KEY (section_no, Semester_id),
+    FOREIGN KEY (section_no) REFERENCES Section(section_no)
+);
+
+4. University Portal Features
+
+
+
+CREATE TABLE Note (
+    Title           VARCHAR(200) NOT NULL,
+    Rating          DECIMAL(3,2) DEFAULT 0.00,
+    File_Type       VARCHAR(20),
+    Download        INT DEFAULT 0,
+    Upload_Date     DATE,
+    Student_id      VARCHAR(10),
+    PRIMARY KEY (Title, Student_id),
+    FOREIGN KEY (Student_id) REFERENCES Student(Student_id)
+);
+
+CREATE TABLE Reward_Points (
+    Reward_id       INT AUTO_INCREMENT PRIMARY KEY,
+    Rank            INT,
+    Points_Awarded  INT DEFAULT 0,
+    Student_id      VARCHAR(10),
+    FOREIGN KEY (Student_id) REFERENCES Student(Student_id)
+);
+
+CREATE TABLE Clubs (
+    Club_Name       VARCHAR(100) PRIMARY KEY,
+    NO_of_members   INT DEFAULT 0,
+    Activities      TEXT,
+    Student_id      VARCHAR(10),
+    FOREIGN KEY (Student_id) REFERENCES Student(Student_id)
+);
+
+CREATE TABLE Complaint (
+    Complain_id     INT AUTO_INCREMENT PRIMARY KEY,
+    Statement       TEXT,
+    Issue_Type      VARCHAR(100),
+    submitted_date  DATE,
+    Student_id      VARCHAR(10),
+    FOREIGN KEY (Student_id) REFERENCES Student(Student_id)
+);
+
+CREATE TABLE Files (
+    Student_id      VARCHAR(10),
+    Complain_id     INT,
+    PRIMARY KEY (Student_id, Complain_id),
+    FOREIGN KEY (Student_id)  REFERENCES Student(Student_id),
+    FOREIGN KEY (Complain_id) REFERENCES Complaint(Complain_id)
+);
+
+CREATE TABLE AcademicRoutine (
+    Student_id      VARCHAR(10),
+    Courses         VARCHAR(100),
+    Exam_date       DATE,
+    Exam_routine    TEXT,
+    Attribute       VARCHAR(100),
+    PRIMARY KEY (Student_id, Courses),
+    FOREIGN KEY (Student_id) REFERENCES Student(Student_id)
+);
+
+CREATE TABLE Semester_Fees (
+    Payment_id      INT AUTO_INCREMENT PRIMARY KEY,
+    Payment_date    DATE,
+    Segment         VARCHAR(50),
+    Amount          DECIMAL(10,2) NOT NULL,
+    Student_id      VARCHAR(10),
+    FOREIGN KEY (Student_id) REFERENCES Student(Student_id)
+);
+
+CREATE TABLE AnalyticsDashboard (
+    Course_Section      VARCHAR(50) PRIMARY KEY,
+    Highest_Grade       VARCHAR(5),        
+    Class_performance   VARCHAR(100),
+    Lowest_Grade        VARCHAR(5)         
+);
+
+CREATE TABLE Smart_Recommendation (
+    Student_id       VARCHAR(10),
+    Courses_done     TEXT,
+    courses_not_done TEXT,
+    PRIMARY KEY (Student_id),
+    FOREIGN KEY (Student_id) REFERENCES Student(Student_id)
+);
+
+
+DEPARTMENT & FACULTY 
+
+INSERT INTO Department VALUES
+('CSE',   'Computer Science & Engineering',       0),
+('BBS',   'Business & Economics',                 0),
+('MNS',   'Mathematics & Natural Sciences',       0),
+('EEE',   'Electrical & Electronic Engineering',  0),
+('ENH',   'English & Humanities',                 0),
+('ESS',   'Economics & Social Sciences',          0),
+('GenEd', 'General Education',                    0);
+
+INSERT INTO Faculty VALUES
+('F001','Professor', 'Database Systems',        'Sayeedur Rahman','sayeedur@bracu.ac.bd', 'CSE'),
+('F002','Assoc Prof','Algorithms',              'Amina Khatun',   'amina@bracu.ac.bd',    'CSE'),
+('F003','Asst Prof', 'Programming',             'Tanvir Hossain', 'tanvir@bracu.ac.bd',   'CSE'),
+('F004','Asst Prof', 'Software Engineering',    'Nadia Islam',    'nadia@bracu.ac.bd',    'CSE'),
+('F005','Professor', 'Computer Networks',       'Kamal Uddin',    'kamal@bracu.ac.bd',    'CSE'),
+('F006','Lecturer',  'Operating Systems',       'Raihan Ahmed',   'raihan@bracu.ac.bd',   'CSE'),
+('F007','Professor', 'Artificial Intelligence', 'Farhan Hasan',   'farhan@bracu.ac.bd',   'CSE'),
+('F008','Assoc Prof','Mathematics',             'Sumaiya Begum',  'sumaiya@bracu.ac.bd',  'MNS'),
+('F009','Professor', 'Physics',                 'Imtiaz Khan',    'imtiaz@bracu.ac.bd',   'MNS'),
+('F010','Asst Prof', 'Business Admin',          'Rezaul Karim',   'rezaul@bracu.ac.bd',   'BBS'),
+('F011','Professor', 'Economics',               'Shaheen Akter',  'shaheen@bracu.ac.bd',  'ESS'),
+('F012','Lecturer',  'English Literature',      'Farhana Yasmin', 'farhana@bracu.ac.bd',  'ENH'),
+('F013','Assoc Prof','Circuit Theory',          'Syed Mahmud',    'syed@bracu.ac.bd',     'EEE'),
+('F014','Asst Prof', 'Statistics',              'Arif Billah',    'arif@bracu.ac.bd',     'MNS'),
+('F015','Professor', 'Microbiology',            'Nasrin Sultana', 'nasrin@bracu.ac.bd',   'MNS');
+
+ STUDENT & PHONES 
+
+
+INSERT INTO Student VALUES
+('22301001','2003-05-12','faiyaz.ahmed@g.bracu.ac.bd',   'Faiyaz','Ahmed',   3.50,'Undergrad','Male',  'CSE'),
+('22301002','2003-08-22','fabiha.islam@g.bracu.ac.bd',   'Fabiha','Islam',   3.70,'Undergrad','Female','CSE'),
+('22301003','2003-11-03','shuvo.hasan@g.bracu.ac.bd',    'Shuvo', 'Hasan',   3.20,'Undergrad','Male',  'CSE'),
+('21201001','2002-03-15','rakib.hossain@g.bracu.ac.bd',  'Rakib', 'Hossain', 3.80,'Undergrad','Male',  'CSE'),
+('21201002','2002-07-25','mitu.akter@g.bracu.ac.bd',     'Mitu',  'Akter',   3.60,'Undergrad','Female','CSE'),
+('21201003','2002-09-10','nafis.rahman@g.bracu.ac.bd',   'Nafis', 'Rahman',  3.10,'Undergrad','Male',  'CSE'),
+('22101001','2003-01-20','sadia.begum@g.bracu.ac.bd',    'Sadia', 'Begum',   3.90,'Undergrad','Female','BBS'),
+('22101002','2003-04-18','arpon.das@g.bracu.ac.bd',      'Arpon', 'Das',     3.40,'Undergrad','Male',  'BBS'),
+('22201001','2003-06-30','tonni.khatun@g.bracu.ac.bd',   'Tonni', 'Khatun',  3.55,'Undergrad','Female','EEE'),
+('22201002','2003-02-14','rifat.mahmud@g.bracu.ac.bd',   'Rifat', 'Mahmud',  3.30,'Undergrad','Male',  'EEE'),
+('23301001','2004-09-05','lamia.sharmin@g.bracu.ac.bd',  'Lamia', 'Sharmin', 3.75,'Undergrad','Female','CSE'),
+('23301002','2004-12-25','sabbir.khan@g.bracu.ac.bd',    'Sabbir','Khan',    3.15,'Undergrad','Male',  'CSE'),
+('20101001','2001-07-07','imran.hossain@g.bracu.ac.bd',  'Imran', 'Hossain', 3.65,'Undergrad','Male',  'CSE'),
+('20101002','2001-10-10','priya.sen@g.bracu.ac.bd',      'Priya', 'Sen',     3.45,'Undergrad','Female','CSE'),
+('22401001','2003-03-08','nusrat.jahan@g.bracu.ac.bd',   'Nusrat','Jahan',   3.85,'Undergrad','Female','MNS');
+
+INSERT INTO Student_Phone VALUES
+('01711000001','22301001'),('01711000002','22301002'),('01711000003','22301003'),
+('01722000001','21201001'),('01722000002','21201002'),('01722000003','21201003'),
+('01733000001','22101001'),('01733000002','22101002'),('01744000001','22201001'),
+('01744000002','22201002'),('01755000001','23301001'),('01755000002','23301002'),
+('01766000001','20101001'),('01766000002','20101002'),('01777000001','22401001');
+
+OPTIMIZED CLASSROOMS (Exactly 25 total) 
+
+
+
+
+INSERT INTO Classroom (room_no, capacity, projector, pcs, Equipment_List) VALUES
+('07A-01C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('07A-02C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('07A-03C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('07A-04C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('07A-05C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('08A-01C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('08A-02C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('08A-03C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('08A-04C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('08A-05C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('09A-01C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('09A-02C',40, TRUE, 0,'Projector,Whiteboard,AC'),
+('09C-16T',120,TRUE, 0,'Projector,Mic,AC'),
+('09E-20T',120,TRUE, 0,'Projector,Mic,AC'),
+('09B-10L',30, FALSE,30,'30 PCs,AC'),
+('10A-04C',40, TRUE, 0,'Projector,AC'),
+('10B-12C',40, TRUE, 0,'Projector,AC'),
+('10D-23C',40, TRUE, 0,'Projector,AC'),
+('10E-25L',30, FALSE,30,'30 PCs,AC'),
+('10E-26L',30, FALSE,30,'30 PCs,AC'),
+('12A-07C',40, TRUE, 0,'Projector,AC'),
+('12A-08C',40, TRUE, 0,'Projector,AC'),
+('12A-09C',40, TRUE, 0,'Projector,AC'),
+('12A-01L',30, FALSE,30,'30 PCs,AC'),
+('12A-02L',30, FALSE,30,'30 PCs,AC');
+
+Subclasses 
+
+
+INSERT INTO Classroom_Lab_Room VALUES
+('CSE Programming Lab', '09B-10L', 3, 27),
+('BBS MIS Lab',         '10E-25L', 2, 28),
+('BBS Finance Lab',     '10E-26L', 1, 29),
+('CSE DB Lab',          '12A-01L', 2, 28),
+('CSE Network Lab',     '12A-02L', 1, 29);
+
+INSERT INTO Classroom_Theory_Room VALUES
+('Theory Room 07A-01C','07A-01C',10,30),
+('Theory Room 07A-02C','07A-02C', 8,32),
+('Theory Room 07A-03C','07A-03C', 7,33),
+('Theory Room 07A-04C','07A-04C', 9,31),
+('Theory Room 07A-05C','07A-05C',10,30),
+('Theory Room 08A-01C','08A-01C', 6,34),
+('Theory Room 08A-04C','08A-04C', 8,32),
+('Theory Room 09A-01C','09A-01C', 5,35);
+
+
+
+COURSES 
+
+
+
+INSERT INTO Course VALUES
+('CSE101','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','08A-01C'),
+('CSE110','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','07A-03C'),
+('CSE111','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','07A-02C'),
+('CSE220','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','07A-01C'),
+('CSE221','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','07A-03C'),
+('CSE230','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','07A-01C'),
+('CSE320','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','08A-01C'),
+('CSE321','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','07A-04C'),
+('CSE330','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','07A-01C'),
+('CSE340','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','07A-05C'),
+('CSE360','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','08A-02C'),
+('CSE370','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','08A-03C'),
+('CSE420','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','07A-05C'),
+('CSE421','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','09A-02C'),
+('CSE422','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','07A-02C'),
+('CSE423','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','08A-04C'),
+('CSE440','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','08A-05C'),
+('CSE460','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','08A-01C'),
+('CSE470','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'CSE','08A-02C'),
+('MAT101','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'MNS','07A-01C'),
+('MAT110','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'MNS','07A-02C'),
+('MAT120','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'MNS','08A-02C'),
+('MAT215','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'MNS','09A-02C'),
+('MAT216','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'MNS','08A-01C'),
+('PHY111','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'MNS','07A-01C'),
+('PHY112','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'MNS','07A-04C'),
+('STA101','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'MNS','09A-01C'),
+('STA201','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'MNS','12A-09C'),
+('CHE101','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'MNS','09A-02C'),
+('BIO101','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'MNS','10A-04C'),
+('ECO101','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'ESS','09C-16T'),
+('ECO102','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'ESS','07A-04C'),
+('BUS102','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'BBS','07A-01C'),
+('BUS201','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'BBS','07A-01C'),
+('MGT213','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'BBS','07A-03C'),
+('MKT201','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'BBS','07A-03C'),
+('FIN201','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'BBS','07A-02C'),
+('ACT201','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'BBS','09C-16T'),
+('ENG111','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'ENH','08A-05C'),
+('ENG115','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'ENH','09A-02C'),
+('SOC101','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'ESS','07A-03C'),
+('PSY101','SP26',3,'2026-01-15',40,'2026-01-10','2026-04-30',15,'GenEd','08A-03C');
+
+INSERT INTO Prerequisite VALUES
+('CSE111','CSE110'),('CSE220','CSE111'),('CSE221','CSE220'),
+('CSE230','CSE110'),('CSE320','CSE221'),('CSE321','CSE221'),
+('CSE330','CSE320'),('CSE340','CSE221'),('CSE360','CSE230'),
+('CSE370','CSE221'),('CSE420','CSE221'),('CSE421','CSE420'),
+('CSE422','CSE420'),('CSE423','CSE420'),('CSE440','CSE330'),
+('CSE460','CSE221'),('CSE470','CSE340'),('MAT110','MAT101'),
+('MAT120','MAT101'),('PHY112','PHY111'),('STA201','STA101'),
+('ECO102','ECO101');
+
+INSERT INTO Enrolled_In VALUES
+('22301001','CSE370'),('22301001','CSE221'),('22301001','MAT120'),
+('22301002','CSE370'),('22301002','CSE221'),('22301002','MAT120'),
+('22301003','CSE370'),('22301003','CSE330'),
+('21201001','CSE370'),('21201001','CSE420'),
+('21201002','CSE370'),('21201002','CSE340'),
+('21201003','CSE320'),('21201003','CSE330'),
+('23301001','CSE110'),('23301001','MAT101'),
+('23301002','CSE110'),
+('22101001','BUS102'),('22101001','MGT213'),
+('22101002','BUS102'),
+('22201001','PHY111'),('22201002','PHY111'),
+('22401001','STA101'),('22401001','MAT215');
+
+INSERT INTO Grade VALUES
+('22301001','CSE370','A',   92.00),('22301001','CSE221','A-',  86.00),
+('22301001','MAT120','B+',  80.00),('22301002','CSE370','A',   94.00),
+('22301002','CSE221','B+',  78.00),('22301002','MAT120','A-',  85.00),
+('22301003','CSE370','B',   72.00),('21201001','CSE370','A-',  88.00),
+('21201001','CSE420','B+',  74.00),('21201002','CSE370','B+',  82.00),
+('21201003','CSE320','C+',  62.00),('23301001','CSE110','A',   95.00),
+('22101001','BUS102','A-',  91.00),('22201001','PHY111','B+',  76.00),
+('22401001','STA101','A-',  89.00);
+
+ EXAM & SECTION 
+
+
+
+
+INSERT INTO Exam (Exam_type, Room_number, Start_time, Exam_date, Student_id) VALUES
+('Midterm','08A-03C','16:30:00','2026-04-04','22301001'),
+('Midterm','08A-04C','16:30:00','2026-04-04','22301002'),
+('Midterm','08A-04C','16:30:00','2026-04-04','22301003'),
+('Midterm','08A-03C','16:30:00','2026-04-04','21201001'),
+('Midterm','08A-03C','16:30:00','2026-04-04','21201002'),
+('Midterm','07A-03C','08:30:00','2026-03-31','22301001'),
+('Midterm','07A-03C','08:30:00','2026-03-31','22301002'),
+('Midterm','08A-02C','14:00:00','2026-04-06','22301001'),
+('Midterm','08A-02C','14:00:00','2026-04-06','22301002'),
+('Final',  '08A-04C','09:00:00','2026-06-15','22301001'),
+('Final',  '08A-04C','09:00:00','2026-06-15','22301002'),
+('Final',  '08A-04C','09:00:00','2026-06-15','22301003');
+
+INSERT INTO Section VALUES
+('1', '08A-03C','2026-04-04','16:30:00'),
+('2', '07A-01C','2026-04-04','16:30:00'),
+('3', '08A-04C','2026-04-04','16:30:00'),
+('4', '07A-02C','2026-04-04','16:30:00'),
+('5', '07A-03C','2026-04-04','16:30:00'),
+('6', '07A-04C','2026-04-04','16:30:00'),
+('7', '07A-05C','2026-04-04','16:30:00'),
+('8', '08A-01C','2026-04-04','16:30:00'),
+('9', '08A-02C','2026-04-04','16:30:00'),
+('10','08A-05C','2026-04-04','16:30:00'),
+('11','09A-01C','2026-04-04','16:30:00'),
+('13','09A-02C','2026-04-04','16:30:00');
+
+INSERT INTO Section_Timing VALUES
+('4:30 PM - 6:00 PM', '10','SP26'),
+('8:30 AM - 10:00 AM','1', 'SP26'),
+('2:00 PM - 3:30 PM', '2', 'SP26');
+
+ ACADEMIC ROUTINE 
+
+
+
+
+INSERT INTO AcademicRoutine VALUES
+('22301001','CSE370','2026-04-04','Section 15 | 4:30-6:00 PM | 08A-04C','Midterm'),
+('22301001','CSE221','2026-03-31','Section 1  | 8:30-10:00 AM | 07A-03C','Midterm'),
+('22301001','MAT120','2026-04-06','Section 1  | 2:00-3:30 PM | 08A-02C','Midterm'),
+('22301002','CSE370','2026-04-04','Section 15 | 4:30-6:00 PM | 08A-04C','Midterm'),
+('22301002','CSE221','2026-03-31','Section 1  | 8:30-10:00 AM | 07A-03C','Midterm'),
+('22301002','MAT120','2026-04-06','Section 1  | 2:00-3:30 PM | 08A-02C','Midterm'),
+('22301003','CSE370','2026-04-04','Section 15 | 4:30-6:00 PM | 08A-04C','Midterm'),
+('21201001','CSE370','2026-04-04','Section 1  | 4:30-6:00 PM | 08A-03C','Midterm'),
+('21201001','CSE420','2026-04-02','Section 1  | 2:00-3:30 PM | 07A-05C','Midterm');
+
+
+
+ STUDENT LIFE & ADMIN 
+
+
+
+INSERT INTO Note VALUES
+('CSE370 ER Diagram Notes',      4.8,'PDF',  45,'2026-02-15','22301001'),
+('Database Normalization Guide', 4.5,'PDF',  30,'2026-02-20','22301002'),
+('SQL Cheat Sheet',              4.9,'PDF',  80,'2026-03-01','21201001'),
+('CSE221 Algorithm Handwritten', 4.2,'Image',20,'2026-02-18','22301001'),
+('Sorting Algorithms Explained', 4.6,'PDF',  35,'2026-02-25','22301002'),
+('MAT120 Calculus Formula Sheet',4.7,'PDF',  55,'2026-03-05','21201001');
+
+INSERT INTO Reward_Points (Rank, Points_Awarded, Student_id) VALUES
+(3, 10,'22301001'),(4, 10,'22301002'),(1, 20,'21201001'),
+(2, 10,'22301001'),(5, 10,'22301002'),(2, 10,'21201001');
+
+INSERT INTO Clubs VALUES
+('BRACU Computer Club',                45,'Programming contests, hackathons','22301001'),
+('BRACU Science Club',                 30,'Science fairs, experiments',      '22401001'),
+('BRACU Business Club',                50,'Case competitions, seminars',      '22101001'),
+('BRACU Robotics Club',                25,'Robot building, competitions',     '22201001'),
+('BRACU Debate Club',                  40,'Debates, public speaking',         '22301002'),
+('BRACU Leadership Development Forum', 35,'Leadership workshops, seminars',   '21201001'),
+('BRACU Research for Development',     28,'Research seminars, publications',  '21201002'),
+('BRACU Photography Club',             35,'Photo walks, exhibitions',         '23301001'),
+('BRACU Sports Club',                  60,'Cricket, football, badminton',     '23301002'),
+('BRACU Cultural Club',                55,'Annual programs, Pohela Boishakh', '22101002');
+
+INSERT INTO Complaint (Statement, Issue_Type, submitted_date, Student_id) VALUES
+('The AC in 08A-04C is not working.',       'Broken AC',             '2026-03-10','22301001'),
+('Projector in 07A-05C shows distortion.',  'Projector not working', '2026-03-12','22301002'),
+('WiFi signal is very weak in Building 7.', 'WiFi problem',          '2026-03-15','22301003'),
+('PC #12 in 09B-10L has keyboard issues.',  'Lab computer damaged',  '2026-03-18','21201001'),
+('Several chairs in 07A-05C are broken.',   'Broken furniture',      '2026-03-20','21201002');
+
+INSERT INTO Files VALUES
+('22301001',1),('22301002',2),('22301003',3),('21201001',4),('21201002',5);
+
+INSERT INTO Semester_Fees (Payment_date, Segment, Amount, Student_id) VALUES
+('2026-01-12','Full Payment',  85000.00,'22301001'),(NULL,        'Installment 1', 85000.00,'22301002'),
+(NULL,        'Full Payment',  85000.00,'22301003'),('2026-01-10','Full Payment',  85000.00,'21201001'),
+(NULL,        'Installment 2', 85000.00,'21201002'),('2026-01-14','Full Payment',  85000.00,'21201003'),
+('2026-01-11','Full Payment',  85000.00,'22101001'),('2026-01-13','Full Payment',  85000.00,'22101002'),
+(NULL,        'Full Payment',  85000.00,'22201001'),('2026-01-15','Full Payment',  85000.00,'22201002');
+
+INSERT INTO AnalyticsDashboard VALUES
+('CSE370-SP26','A',  'Good — Most students above B+',        'C'),
+('CSE221-SP26','A',  'Good — Strong algorithmic performance', 'B+'),
+('MAT120-SP26','A-', 'Average — Some students struggling',    'C+'),
+('CSE420-SP26','B+', 'Good — Active participation',           'B'),
+('BUS102-SP26','A',  'Excellent — High engagement',           'B+');
+
+INSERT INTO Smart_Recommendation VALUES
+('22301001','CSE110,CSE111,CSE220,CSE221','CSE370,CSE420,CSE421'),
+('22301002','CSE110,CSE111,CSE220,CSE221','CSE370,CSE422,CSE423'),
+('22301003','CSE110,CSE111,CSE220',       'CSE221,CSE370,CSE330'),
+('21201001','CSE110,CSE111,CSE220,CSE221,CSE320,CSE330','CSE420,CSE440'),
+('21201002','CSE110,CSE111,CSE220,CSE221','CSE340,CSE370,CSE460'),
+('23301001','CSE110',                     'CSE111,CSE220,CSE221,CSE370');
+
+DYNAMIC UPDATES 
+
+
+
+UPDATE Department SET total_no_students=(SELECT COUNT(*) FROM Student WHERE dept_id='CSE')   WHERE dept_id='CSE';
+UPDATE Department SET total_no_students=(SELECT COUNT(*) FROM Student WHERE dept_id='BBS')   WHERE dept_id='BBS';
+UPDATE Department SET total_no_students=(SELECT COUNT(*) FROM Student WHERE dept_id='EEE')   WHERE dept_id='EEE';
+UPDATE Department SET total_no_students=(SELECT COUNT(*) FROM Student WHERE dept_id='MNS')   WHERE dept_id='MNS';
+UPDATE Department SET total_no_students=(SELECT COUNT(*) FROM Student WHERE dept_id='ENH')   WHERE dept_id='ENH';
+UPDATE Department SET total_no_students=(SELECT COUNT(*) FROM Student WHERE dept_id='ESS')   WHERE dept_id='ESS';
+UPDATE Department SET total_no_students=(SELECT COUNT(*) FROM Student WHERE dept_id='GenEd') WHERE dept_id='GenEd';
+
+
+
+SELECT Student_id, Fname, Lname, cgpa, dept_id 
+FROM Student 
+WHERE cgpa BETWEEN 3.50 AND 4.00;
+
+SELECT course_code, credit_hours, dept_id 
+FROM Course 
+WHERE dept_id IN ('CSE', 'MNS');
+
+
+SELECT faculty_id, name, specialization, dept_id 
+FROM Faculty 
+WHERE name LIKE 'S%Rahman%';
+
+
+SELECT Fname, Lname, cgpa 
+FROM Student 
+WHERE cgpa = (SELECT MAX(cgpa) FROM Student);
+
+SELECT COUNT(*) AS Top_Performers 
+FROM Grade G1 
+WHERE G1.Course_code = 'CSE370' 
+  AND NOT EXISTS (
+      SELECT * FROM Grade G2 
+      WHERE G2.Course_code = 'CSE370' 
+        AND G2.Student_id != G1.Student_id 
+        AND G2.Marks_obtained > G1.Marks_obtained
+  );
+
+
+SELECT course_code, max_capacity 
+FROM Course 
+WHERE max_capacity >= ALL (
+    SELECT max_capacity 
+    FROM Course 
+    WHERE dept_id = 'BBS'
+);
+
+SELECT S.Fname, S.Lname, D.dept_name 
+FROM Student S 
+JOIN Department D ON S.dept_id = D.dept_id;
+
+SELECT dept_id, COUNT(Student_id) AS Total_Students, AVG(cgpa) AS Average_CGPA 
+FROM Student 
+GROUP BY dept_id 
+HAVING COUNT(Student_id) >= 2;
+
+
+SELECT S.Fname, S.Lname, G.Marks_obtained 
+FROM Student S 
+JOIN Grade G ON S.Student_id = G.Student_id 
+WHERE G.Course_code = 'CSE370' 
+ORDER BY G.Marks_obtained DESC 
+LIMIT 3;
+
+SELECT F.name, COUNT(C.course_code) AS Total_Courses
+FROM Faculty F
+LEFT JOIN Course C ON F.dept_id = C.dept_id
+GROUP BY F.faculty_id, F.name;
+
+
+
+
+
+
